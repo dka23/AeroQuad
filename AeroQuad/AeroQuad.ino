@@ -773,6 +773,95 @@
   }
 #endif
 
+#ifdef AeroQuadMega_LSM303DLM_L3G4200D
+  #define LED_Green 13
+  #define LED_Red 4
+  #define LED_Yellow 31
+
+
+  #include <Device_I2C.h>
+
+
+  // Gyroscope declaration
+  #include <Gyroscope_L3G4200D.h>
+
+
+  // Accelerometer declaration
+  #include <Accelerometer_LSM303DLM.h>
+
+
+  // Receiver declaration
+  #define RECEIVER_MEGA
+
+
+  // Motor declaration
+  #define MOTOR_PWM
+
+
+  // heading mag hold declaration
+  #ifdef HeadingMagHold
+    #define HMC5843
+    // The magnetometer in the LSM303DLM seems to be compatible to the HMC5843
+  #endif
+
+
+  // Altitude declaration
+  #ifdef AltitudeHoldBaro
+    #define BMP085
+  #endif
+  #ifdef AltitudeHoldRangeFinder
+    #define XLMAXSONAR 
+  #endif
+
+
+  // Battery monitor declaration
+  #ifdef BattMonitor
+    #define BattDefaultConfig DEFINE_BATTERY(0, 0, 15.0, 0.9, BM_NOPIN, 0, 0)
+  #else
+    #undef BattMonitorAutoDescent
+    #undef BattCellCount
+    #undef POWERED_BY_VIN        
+  #endif
+
+
+  #ifdef OSD
+    #define MAX7456_OSD
+  #endif
+
+
+  void initPlatform() {
+    Wire.begin();
+
+  #ifndef cbi
+#define cbi(sfr, bit) (_SFR_BYTE(sfr) &= ~_BV(bit))
+#endif
+
+ #if defined(__AVR_ATmega168__) || defined(__AVR_ATmega8__) || defined(__AVR_ATmega328P__)
+    // deactivate internal pull-ups for twi
+    // as per note from atmega8 manual pg167
+    cbi(PORTC, 4);
+    cbi(PORTC, 5);
+  #else
+    // deactivate internal pull-ups for twi
+    // as per note from atmega128 manual pg204
+    cbi(PORTD, 0);
+    cbi(PORTD, 1);
+  #endif  
+
+  }
+
+
+  /**
+   * Measure critical sensors
+   */
+  void measureCriticalSensors() {
+    if (deltaTime >= 10000) {
+      measureGyro();
+      measureAccelSum();
+    }
+  }
+#endif
+
 #ifdef APM_OP_CHR6DM
   #define LED_Green 37
   #define LED_Red 35

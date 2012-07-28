@@ -751,6 +751,8 @@ void reportVehicleState() {
     SERIAL_PRINTLN("Mini");
   #elif defined(AeroQuadSTM32)
     SERIAL_PRINTLN("STM32");    
+  #elif defined(AeroQuadMega_LSM303DLM_L3G4200D)
+    SERIAL_PRINTLN("Mega with LSM303DLM and L3G4200D");
   #endif
   SERIAL_PRINT("Flight Config: ");
   #if defined(quadPlusConfig)
