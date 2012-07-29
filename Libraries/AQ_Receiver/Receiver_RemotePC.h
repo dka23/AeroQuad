@@ -37,6 +37,10 @@ void initializeReceiver(int nbChannel) {
   receiverZero[MODE] = 0;
   receiverCommand[AUX] = 2000;
   receiverZero[AUX] = 0;
+    
+#ifdef ReceiverRNXVWiFly
+    pinMode(32, OUTPUT);
+#endif
 }
 
 int getRawChannelValue(byte channel) {

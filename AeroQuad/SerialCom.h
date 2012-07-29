@@ -262,6 +262,22 @@ void readSerialCommand() {
       else
         fastTransfer = OFF;
       break;
+#ifdef ReceiverRNXVWiFly
+    case '*': // RN-XV WiFly Status message
+      char message[5];
+      for (int i=0; i<5; i++) {
+        message[i] = SERIAL_READ();
+      }    
+      
+      if (message[4] == '*') { // Correct status message received
+         if (message[0] == 'O') { // Connection openened (*OPEN*)
+           digitalWrite(32, HIGH);
+         } else if (message[0] == 'C') { // Connection closed (*CLOS*)
+           digitalWrite(32, LOW);
+         }
+      }
+#endif
+
     }
   }
 }
@@ -578,6 +594,7 @@ void sendSerialTelemetry() {
     queryType = 'X';
     break;
   }
+  
 }
 
 // Used to read floating point values from the serial port

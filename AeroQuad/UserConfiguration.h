@@ -104,7 +104,8 @@
 // *******************************************************************************************************************************
 // Optional Receiver
 // *******************************************************************************************************************************
-//#define RemotePCReceiver // EXPERIMENTAL Use PC as transmitter via serial communicator with XBEE
+#define RemotePCReceiver // EXPERIMENTAL Use PC as transmitter via serial communicator with XBEE
+#define ReceiverRNXVWiFly // Use remote via RNXVWiFly; this should be enabled in addition to RemotePCReceiver
 //#define ReceiverPPM // Use a ppm receiver
 //#define ReceiverHWPPM // Use a ppm receiver with HW timer, needs a HW modification (see Libraries/AQ_Receiver/Receiver_HWPPM.h)
 // You need to select one of these channel order definitions for PPM receiver
@@ -117,7 +118,7 @@
 // Optional telemetry (for debug or ground station tracking purposes)
 // For more information on how to setup Telemetry please refer to http://aeroquad.com/showwiki.php?title=Xbee+Installation
 // *******************************************************************************************************************************
-//#define WirelessTelemetry  // Enables Wireless telemetry on Serial3  // Wireless telemetry enable
+#define WirelessTelemetry  // Enables Wireless telemetry on Serial3  // Wireless telemetry enable
 //#define BinaryWrite // Enables fast binary transfer of flight data to Configurator
 //#define BinaryWritePID // Enables fast binary transfer of attitude PID data
 //#define OpenlogBinaryWrite // Enables fast binary transfer to serial1 and openlog hardware
