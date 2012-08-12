@@ -178,7 +178,7 @@ void processHardManuevers() {
  */
 void processMinMaxCommand()
 {
-  /*for (byte motor = 0; motor < LASTMOTOR; motor++)
+  for (byte motor = 0; motor < LASTMOTOR; motor++)
   {
     motorMinCommand[motor] = minArmedThrottle;
     motorMaxCommand[motor] = MAXCOMMAND;
@@ -196,10 +196,10 @@ void processMinMaxCommand()
     if (maxMotor > MAXCOMMAND) {
       motorCommand[motor] =  motorCommand[motor] - (maxMotor - MAXCOMMAND);
     }
-  }*/
+  }
   
   // Force motors to be equally distant from throttle value for balanced motor output during hard yaw
-  byte motorMaxCheck = OFF;
+  /* byte motorMaxCheck = OFF;
   byte motorMinCheck = OFF;
 
   // Check if everything within motor limits
@@ -237,7 +237,7 @@ void processMinMaxCommand()
         motorMaxCommand[motorLimit] = motorCommand[motorLimit];
       minLimit = ON;
     }
-  }
+  }*/
 }
 
 /**

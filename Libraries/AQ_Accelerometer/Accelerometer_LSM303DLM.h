@@ -43,8 +43,8 @@ void initializeAccel() {
   
 void measureAccel() {
     accelScaleFactor[XAXIS] = 19.62 / 32767.0;
-    accelScaleFactor[YAXIS] = -19.62 / 32767.0;
-    accelScaleFactor[ZAXIS] = -19.62 / 32767.0;
+    accelScaleFactor[YAXIS] = 19.62 / 32767.0;
+    accelScaleFactor[ZAXIS] = 19.62 / 32767.0;
     
   sendByteI2C(ACCEL_ADDRESS, 0xA8);
   Wire.requestFrom(ACCEL_ADDRESS, 6);
@@ -66,8 +66,8 @@ void measureAccelSum() {
 
 void evaluateMetersPerSec() {
     accelScaleFactor[XAXIS] = 19.62 / 32767.0;
-    accelScaleFactor[YAXIS] = -19.62 / 32767.0;
-    accelScaleFactor[ZAXIS] = -19.62 / 32767.0;
+    accelScaleFactor[YAXIS] = 19.62 / 32767.0;
+    accelScaleFactor[ZAXIS] = 19.62 / 32767.0;
 
     for (byte axis = XAXIS; axis <= ZAXIS; axis++) {
     meterPerSecSec[axis] = (accelSample[axis] / accelSampleCount) * accelScaleFactor[axis] + runTimeAccelBias[axis];
@@ -78,8 +78,8 @@ void evaluateMetersPerSec() {
 
 void computeAccelBias() {
     accelScaleFactor[XAXIS] = 19.62 / 32767.0;
-    accelScaleFactor[YAXIS] = -19.62 / 32767.0;
-    accelScaleFactor[ZAXIS] = -19.62 / 32767.0;
+    accelScaleFactor[YAXIS] = 19.62 / 32767.0;
+    accelScaleFactor[ZAXIS] = 19.62 / 32767.0;
 
     
   for (int samples = 0; samples < SAMPLECOUNT; samples++) {

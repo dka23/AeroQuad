@@ -774,6 +774,7 @@
 #endif
 
 #ifdef AeroQuadMega_LSM303DLM_L3G4200D
+// DKA CONFIG
   #define LED_Green 13
   #define LED_Red 4
   #define LED_Yellow 31
@@ -791,7 +792,7 @@
 
 
   // Receiver declaration
-  #define RECEIVER_MEGA
+  //#define RECEIVER_MEGA
 
 
   // Motor declaration
@@ -816,7 +817,7 @@
 
   // Battery monitor declaration
   #ifdef BattMonitor
-    #define BattDefaultConfig DEFINE_BATTERY(0, 0, 15.0, 0.9, BM_NOPIN, 0, 0)
+    #define BattDefaultConfig DEFINE_BATTERY(4, 0, 3.47*5.0, 0, BM_NOPIN, 0, 0)
   #else
     #undef BattMonitorAutoDescent
     #undef BattCellCount
@@ -830,6 +831,11 @@
 
 
   void initPlatform() {
+    pinMode(LED_Red, OUTPUT);
+    digitalWrite(LED_Red, LOW);
+    pinMode(LED_Yellow, OUTPUT);
+    digitalWrite(LED_Yellow, LOW);
+
     Wire.begin();
 
   #ifndef cbi
@@ -855,10 +861,8 @@
    * Measure critical sensors
    */
   void measureCriticalSensors() {
-    if (deltaTime >= 10000) {
-      measureGyro();
-      measureAccelSum();
-    }
+    measureAccelSum();
+    measureGyro();
   }
 #endif
 
