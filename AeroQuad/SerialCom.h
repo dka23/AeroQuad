@@ -279,18 +279,10 @@ void readSerialCommand() {
 #endif
 #ifdef RemotePCReceiver
     case 'T': // Receive transmitter values
-      //SERIAL_PRINT("Receiving transmitter values");
       for (int i=0; i<LASTCHANNEL; i++) {
         int intValue = (int)readFloatSerial();
         setChannelValue((byte)i, intValue);
-        /*
-        SERIAL_PRINT("Channel ");
-        SERIAL_PRINT((byte)i);
-        SERIAL_PRINT("=");
-        SERIAL_PRINTLN(intValue);
-        */
       }   
-      //SERIAL_PRINT("Done receiving transmitter values");   
 #endif
 
     }
