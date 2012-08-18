@@ -31,14 +31,10 @@ void initializeReceiver(int nbChannel) {
   initializeReceiverParam(nbChannel);
   for (byte channel = XAXIS; channel < THROTTLE; channel++) {
     receiverRawData[channel] = 1500;
-    //receiverZero[channel] = 1500;
   }
-  receiverRawData[THROTTLE] = 0;
-  //receiverZero[THROTTLE] = 0;
+  receiverRawData[THROTTLE] = 1000;
   receiverRawData[MODE] = 2000;
-  //receiverZero[MODE] = 0;
   receiverRawData[AUX] = 2000;
-  //receiverZero[AUX] = 0;
     
 #ifdef ReceiverRNXVWiFly
     pinMode(32, OUTPUT);

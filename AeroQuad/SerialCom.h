@@ -274,15 +274,36 @@ void readSerialCommand() {
            digitalWrite(32, HIGH);
          } else if (message[0] == 'C') { // Connection closed (*CLOS*)
            digitalWrite(32, LOW);
+           queryType = 'X';
+           
+#ifdef RemotePCReceiver
+           // Reset Roll, Pitch, Yaw
+           setChannelValue(XAXIS, 1500);
+           setChannelValue(YAXIS, 1500);
+           setChannelValue(ZAXIS, 1500);
+#endif
          }
       }
 #endif
 #ifdef RemotePCReceiver
     case 'T': // Receive transmitter values
+      int recvValues[LASTCHANNEL];
+      boolean recvOk = true;
       for (int i=0; i<LASTCHANNEL; i++) {
-        int intValue = (int)readFloatSerial();
-        setChannelValue((byte)i, intValue);
-      }   
+        recvValues[i] = (int)readFloatSerial();
+        if (!(recvValues[i] >= 1000 && recvValues[i] <= 2000)) {
+          recvOk = false;
+        }
+      } 
+
+      if (recvOk) {
+        for (int i=0; i<LASTCHANNEL; i++) {
+          setChannelValue((byte)i, recvValues[i]);
+        } 
+      }
+      
+      // Make sure telemetry is sent out
+      queryType = 's'; 
 #endif
 
     }
