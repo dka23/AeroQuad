@@ -829,6 +829,10 @@
     #define MAX7456_OSD
   #endif
 
+  // HoTT telemtry
+  #ifdef GraupnerHoTTv4Telemetry
+    #include <Graupner_HoTT_V4.h>
+  #endif
 
   void initPlatform() {
     pinMode(LED_Red, OUTPUT);
@@ -838,21 +842,25 @@
 
     Wire.begin();
 
-  #ifndef cbi
-#define cbi(sfr, bit) (_SFR_BYTE(sfr) &= ~_BV(bit))
-#endif
+    #ifdef GraupnerHoTTv4Telemetry
+      initializeTelemetry();
+    #endif
 
- #if defined(__AVR_ATmega168__) || defined(__AVR_ATmega8__) || defined(__AVR_ATmega328P__)
-    // deactivate internal pull-ups for twi
-    // as per note from atmega8 manual pg167
-    cbi(PORTC, 4);
-    cbi(PORTC, 5);
-  #else
-    // deactivate internal pull-ups for twi
-    // as per note from atmega128 manual pg204
-    cbi(PORTD, 0);
-    cbi(PORTD, 1);
-  #endif  
+    #ifndef cbi
+      #define cbi(sfr, bit) (_SFR_BYTE(sfr) &= ~_BV(bit))
+    #endif
+
+    #if defined(__AVR_ATmega168__) || defined(__AVR_ATmega8__) || defined(__AVR_ATmega328P__)
+      // deactivate internal pull-ups for twi
+      // as per note from atmega8 manual pg167
+      cbi(PORTC, 4);
+      cbi(PORTC, 5);
+    #else
+      // deactivate internal pull-ups for twi
+      // as per note from atmega128 manual pg204
+      cbi(PORTD, 0);
+      cbi(PORTD, 1);
+    #endif  
 
   }
 
@@ -1276,7 +1284,13 @@ void loop () {
   deltaTime = currentTime - previousTime;
 
   measureCriticalSensors();
-
+  #ifdef GraupnerHoTTv4Telemetry
+    processTelemetryCommand();
+  #endif
+  #ifdef GraupnerHoTTv4Telemetry
+    sendTelemetry();
+  #endif
+  
   // Main scheduler loop set for 100hz
   if (deltaTime >= 10000) {
 
@@ -1291,11 +1305,30 @@ void loop () {
       hundredHZpreviousTime = currentTime;
       
       evaluateMetersPerSec();
+
+      // We need to send another byte here, otherwise we are too slow
+      #ifdef GraupnerHoTTv4Telemetry
+        sendTelemetry();
+      #endif
+
+
       evaluateGyroRate();
+
+      // We need to send another byte here, otherwise we are too slow
+      #ifdef GraupnerHoTTv4Telemetry
+        sendTelemetry();
+      #endif
+
 
       for (int axis = XAXIS; axis <= ZAXIS; axis++) {
         filteredAccel[axis] = computeFourthOrder(meterPerSecSec[axis], &fourthOrder[axis]);
       }
+      
+      // We need to send another byte here, otherwise we are too slow
+      #ifdef GraupnerHoTTv4Telemetry
+        sendTelemetry();
+      #endif
+
       
       // ****************** Calculate Absolute Angle *****************
       #if defined FlightAngleNewARG
@@ -1356,6 +1389,11 @@ void loop () {
                             G_Dt);
       #endif
 
+      // We need to send another byte here, otherwise we are too slow
+      #ifdef GraupnerHoTTv4Telemetry
+        sendTelemetry();
+      #endif
+
 
       // Evaluate are here because we want it to be synchronized with the processFlightControl
       #if defined AltitudeHoldBaro
@@ -1364,6 +1402,12 @@ void loop () {
           evaluateBaroAltitude();
         }
       #endif
+
+      // We need to send another byte here, otherwise we are too slow
+      #ifdef GraupnerHoTTv4Telemetry
+        sendTelemetry();
+      #endif
+
       #ifdef AltitudeHoldRangeFinder
         readRangeFinderDistanceSum(ALTITUDE_RANGE_FINDER_INDEX);
         if (frameCounter % THROTTLE_ADJUST_TASK_SPEED == 0) {  //  50 Hz tasks
@@ -1373,6 +1417,11 @@ void loop () {
             
       // Combines external pilot commands and measured sensor data to generate motor commands
       processFlightControl();
+
+      // We need to send another byte here, otherwise we are too slow
+      #ifdef GraupnerHoTTv4Telemetry
+        sendTelemetry();
+      #endif
       
       #ifdef BinaryWrite
         if (fastTransfer == ON) {
@@ -1421,7 +1470,7 @@ void loop () {
       // Listen for configuration commands and reports telemetry
       readSerialCommand(); // defined in SerialCom.pde
       sendSerialTelemetry(); // defined in SerialCom.pde
-
+      
       #ifdef OSD_SYSTEM_MENU
         updateOSDMenu();
       #endif
