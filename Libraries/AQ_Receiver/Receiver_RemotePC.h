@@ -24,27 +24,29 @@
 #include "Arduino.h"
 #include "Receiver.h"
 
+int receiverRawData[MAX_NB_CHANNEL] = {0,0,0,0,0,0,0,0};
+
 void initializeReceiver(int nbChannel) {
 
   initializeReceiverParam(nbChannel);
   for (byte channel = XAXIS; channel < THROTTLE; channel++) {
-    receiverCommand[channel] = 1500;
-    receiverZero[channel] = 1500;
+    receiverRawData[channel] = 1500;
   }
-  receiverCommand[THROTTLE] = 0;
-  receiverZero[THROTTLE] = 0;
-  receiverCommand[MODE] = 2000;
-  receiverZero[MODE] = 0;
-  receiverCommand[AUX] = 2000;
-  receiverZero[AUX] = 0;
+  receiverRawData[THROTTLE] = 1000;
+  receiverRawData[MODE] = 2000;
+  receiverRawData[AUX] = 2000;
+    
+#ifdef ReceiverRNXVWiFly
+    pinMode(32, OUTPUT);
+#endif
 }
 
 int getRawChannelValue(byte channel) {
-  return receiverCommand[channel];
+  return receiverRawData[channel];
 }
   
 void setChannelValue(byte channel,int value) {
-  receiverCommand[channel] = value;
+  receiverRawData[channel] = value;
 }
 
 

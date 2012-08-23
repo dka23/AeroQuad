@@ -289,6 +289,50 @@ void readSerialCommand() {
       else
         fastTransfer = OFF;
       break;
+#ifdef ReceiverRNXVWiFly
+    case '*': // RN-XV WiFly Status message
+      char message[5];
+      for (int i=0; i<5; i++) {
+        message[i] = SERIAL_READ();
+      }    
+      
+      if (message[4] == '*') { // Correct status message received
+         if (message[0] == 'O') { // Connection openened (*OPEN*)
+           digitalWrite(32, HIGH);
+         } else if (message[0] == 'C') { // Connection closed (*CLOS*)
+           digitalWrite(32, LOW);
+           queryType = 'X';
+           
+#ifdef RemotePCReceiver
+           // Reset Roll, Pitch, Yaw
+           setChannelValue(XAXIS, 1500);
+           setChannelValue(YAXIS, 1500);
+           setChannelValue(ZAXIS, 1500);
+#endif
+         }
+      }
+#endif
+#ifdef RemotePCReceiver
+    case 'T': // Receive transmitter values
+      int recvValues[LASTCHANNEL];
+      boolean recvOk = true;
+      for (int i=0; i<LASTCHANNEL; i++) {
+        recvValues[i] = (int)readFloatSerial();
+        if (!(recvValues[i] >= 1000 && recvValues[i] <= 2000)) {
+          recvOk = false;
+        }
+      } 
+
+      if (recvOk) {
+        for (int i=0; i<LASTCHANNEL; i++) {
+          setChannelValue((byte)i, recvValues[i]);
+        } 
+      }
+      
+      // Make sure telemetry is sent out
+      queryType = 's'; 
+#endif
+
     }
   }
 }
@@ -654,6 +698,7 @@ void sendSerialTelemetry() {
     queryType = 'X';
     break;
   }
+  
 }
 
 void readValueSerial(char *data, byte size) {
@@ -846,6 +891,8 @@ void reportVehicleState() {
     SERIAL_PRINTLN("Mini");
   #elif defined(AeroQuadSTM32)
     SERIAL_PRINTLN("STM32");    
+  #elif defined(AeroQuadMega_LSM303DLM_L3G4200D)
+    SERIAL_PRINTLN("Mega with LSM303DLM and L3G4200D");
   #endif
   SERIAL_PRINT("Flight Config: ");
   #if defined(quadPlusConfig)

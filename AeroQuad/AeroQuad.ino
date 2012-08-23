@@ -832,6 +832,107 @@
   }
 #endif
 
+#ifdef AeroQuadMega_LSM303DLM_L3G4200D
+// DKA CONFIG
+  #define LED_Green 13
+  #define LED_Red 4
+  #define LED_Yellow 31
+
+
+  #include <Device_I2C.h>
+
+
+  // Gyroscope declaration
+  #include <Gyroscope_L3G4200D.h>
+
+
+  // Accelerometer declaration
+  #include <Accelerometer_LSM303DLM.h>
+
+
+  // Receiver declaration
+  //#define RECEIVER_MEGA
+
+
+  // Motor declaration
+  #define MOTOR_PWM
+
+
+  // heading mag hold declaration
+  #ifdef HeadingMagHold
+    #define HMC5843
+    // The magnetometer in the LSM303DLM seems to be compatible to the HMC5843
+  #endif
+
+
+  // Altitude declaration
+  #ifdef AltitudeHoldBaro
+    #define BMP085
+  #endif
+  #ifdef AltitudeHoldRangeFinder
+    #define XLMAXSONAR 
+  #endif
+
+
+  // Battery monitor declaration
+  #ifdef BattMonitor
+    #define BattDefaultConfig DEFINE_BATTERY(4, 0, 3.47*5.0, 0, BM_NOPIN, 0, 0)
+  #else
+    #undef BattMonitorAutoDescent
+    #undef BattCellCount
+    #undef POWERED_BY_VIN        
+  #endif
+
+
+  #ifdef OSD
+    #define MAX7456_OSD
+  #endif
+
+  // HoTT telemtry
+  #ifdef GraupnerHoTTv4Telemetry
+    #include <Graupner_HoTT_V4.h>
+  #endif
+
+  void initPlatform() {
+    pinMode(LED_Red, OUTPUT);
+    digitalWrite(LED_Red, LOW);
+    pinMode(LED_Yellow, OUTPUT);
+    digitalWrite(LED_Yellow, LOW);
+
+    Wire.begin();
+
+    #ifdef GraupnerHoTTv4Telemetry
+      initializeTelemetry();
+    #endif
+
+    #ifndef cbi
+      #define cbi(sfr, bit) (_SFR_BYTE(sfr) &= ~_BV(bit))
+    #endif
+
+    #if defined(__AVR_ATmega168__) || defined(__AVR_ATmega8__) || defined(__AVR_ATmega328P__)
+      // deactivate internal pull-ups for twi
+      // as per note from atmega8 manual pg167
+      cbi(PORTC, 4);
+      cbi(PORTC, 5);
+    #else
+      // deactivate internal pull-ups for twi
+      // as per note from atmega128 manual pg204
+      cbi(PORTD, 0);
+      cbi(PORTD, 1);
+    #endif  
+
+  }
+
+
+  /**
+   * Measure critical sensors
+   */
+  void measureCriticalSensors() {
+    measureAccelSum();
+    measureGyro();
+  }
+#endif
+
 #ifdef APM_OP_CHR6DM
   #define LED_Green 37
   #define LED_Red 35
@@ -1299,19 +1400,41 @@ void loop () {
   // ================================================================
   // 100Hz task loop
   // ================================================================
+  #ifdef GraupnerHoTTv4Telemetry
+    processTelemetryCommand();
+  #endif
+  #ifdef GraupnerHoTTv4Telemetry
+    sendTelemetry();
+  #endif
+  
   if (deltaTime >= 10000) {
     
     frameCounter++;
     
     G_Dt = (currentTime - hundredHZpreviousTime) / 1000000.0;
     hundredHZpreviousTime = currentTime;
+
+      // We need to send another byte here, otherwise we are too slow
+      #ifdef GraupnerHoTTv4Telemetry
+        sendTelemetry();
+      #endif
     
     evaluateGyroRate();
     evaluateMetersPerSec();
 
+      // We need to send another byte here, otherwise we are too slow
+      #ifdef GraupnerHoTTv4Telemetry
+        sendTelemetry();
+      #endif
+
     for (int axis = XAXIS; axis <= ZAXIS; axis++) {
       filteredAccel[axis] = computeFourthOrder(meterPerSecSec[axis], &fourthOrder[axis]);
     }
+
+      // We need to send another byte here, otherwise we are too slow
+      #ifdef GraupnerHoTTv4Telemetry
+        sendTelemetry();
+      #endif
       
     /* calculate kinematics */
     calculateKinematics(gyroRate[XAXIS],
@@ -1322,14 +1445,30 @@ void loop () {
                         filteredAccel[ZAXIS],
                         G_Dt);
 
+      // We need to send another byte here, otherwise we are too slow
+      #ifdef GraupnerHoTTv4Telemetry
+        sendTelemetry();
+      #endif
+
 
     // Evaluate are here because we want it to be synchronized with the processFlightControl
     #if defined(AltitudeHoldBaro)
       measureBaroSum(); 
     #endif
+
+      // We need to send another byte here, otherwise we are too slow
+      #ifdef GraupnerHoTTv4Telemetry
+        sendTelemetry();
+      #endif
+
           
     // Combines external pilot commands and measured sensor data to generate motor commands
     processFlightControl();
+
+      // We need to send another byte here, otherwise we are too slow
+      #ifdef GraupnerHoTTv4Telemetry
+        sendTelemetry();
+      #endif
     
     #if defined(BinaryWrite)
         if (fastTransfer == ON) {

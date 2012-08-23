@@ -46,7 +46,7 @@
 #define GYRO_CTRL_REG5 0x24
 
 // Axis inversion: -1 = invert, 1 = don't invert
-int gyroAxisInversionFactor[3] = {1,-1,-1};
+int gyroAxisInversionFactor[3] = {1,1,1};
 
 
 void initializeGyro() {
