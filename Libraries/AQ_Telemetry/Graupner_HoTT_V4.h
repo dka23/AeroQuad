@@ -16,6 +16,7 @@
 #include "Motors.h"
 #include "Compass.h"
 #include "Kinematics.h"
+#include "BarometricSensor.h"
 
 #if GraupnerHoTT_SerialPort == 1
 #define HOTT_SERIAL Serial1
@@ -374,7 +375,7 @@ void prepareHoTTGeneral() {
     
     
     // Altitude
-    int altitude = getAltitudeFromSensors() == INVALID_ALTITUDE ? 0 : getAltitudeFromSensors();
+    int altitude = getBaroAltitude();
     HoTTGeneral.Altitude = altitude + 500;
     
     // Motors Armed
@@ -435,7 +436,7 @@ void prepareHoTTElectricAir() {
     HoTTElectricAir.InputVoltage = batteryData[0].voltage/10.0;
 
     // Altitude
-    int altitude = getAltitudeFromSensors() == INVALID_ALTITUDE ? 0 : getAltitudeFromSensors();
+    int altitude = getBaroAltitude();
     HoTTElectricAir.Altitude = altitude + 500;
     
     // Gyro as cell voltages 1-3 (125 = 2.5V = 0.0), resolution 0.01 = 0.1
