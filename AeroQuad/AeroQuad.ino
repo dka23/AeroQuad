@@ -929,7 +929,7 @@
    */
   void measureCriticalSensors() {
     measureAccelSum();
-    measureGyro();
+    measureGyroSum();
   }
 #endif
 
