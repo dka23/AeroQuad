@@ -29,6 +29,10 @@
 // Registers
 #define LSM303_CTRL_REG1_A       0x20
 
+// Axis inversion: -1 = invert, 1 = don't invert
+int accelAxisInversionFactor[3] = {1,-1,1};
+
+
 void initializeAccel() {
   updateRegisterI2C(ACCEL_ADDRESS, LSM303_CTRL_REG1_A, 0x27); // Normal power mode, all axes enabled
 
@@ -46,7 +50,7 @@ void measureAccel() {
   Wire.requestFrom(ACCEL_ADDRESS, 6);
 
   for (byte axis = XAXIS; axis <= ZAXIS; axis++) {
-    meterPerSecSec[axis] = readReverseShortI2C() * accelScaleFactor[axis] + runTimeAccelBias[axis];
+    meterPerSecSec[axis] = readReverseShortI2C() * accelScaleFactor[axis] * accelAxisInversionFactor[axis] + runTimeAccelBias[axis];
   }
 }
 
@@ -55,7 +59,7 @@ void measureAccelSum() {
   sendByteI2C(ACCEL_ADDRESS, 0xA8);
   Wire.requestFrom(ACCEL_ADDRESS, 6);
   for (byte axis = XAXIS; axis <= ZAXIS; axis++) {
-    accelSample[axis] += readReverseShortI2C();
+    accelSample[axis] += readReverseShortI2C() * accelAxisInversionFactor[axis];
   }
   accelSampleCount++;
 }
