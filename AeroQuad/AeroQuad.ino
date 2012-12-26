@@ -834,9 +834,9 @@
 
 #ifdef AeroQuadMega_LSM303DLM_L3G4200D
 // DKA CONFIG
-  #define LED_Green 13
-  #define LED_Red 4
-  #define LED_Yellow 31
+  #define LED_Green 31
+  #define LED_Red 33
+  #define LED_Yellow 32
 
 
   #include <Device_I2C.h>

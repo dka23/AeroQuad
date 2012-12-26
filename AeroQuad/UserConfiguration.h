@@ -97,8 +97,8 @@
 //#define AltitudeHoldRangeFinder	// Enables Altitude Hold with range finder, not displayed on the configurator (yet)
 //#define AutoLanding			// Enables auto landing on channel AUX3 of the remote, NEEDS AltitudeHoldBaro AND AltitudeHoldRangeFinder to be defined
 
-//#define UseGPS			// Enables GPS, tries to auto-detect the GPS, may have some detection trouble making the connection to the configurator not working
-//#define UseGPSNavigator		// EXPERIMENTAL NEEDS UseGPS TO BE DEFINED, enables GPS Position Hold, auto return to home if no mission or execute mission
+#define UseGPS			// Enables GPS, tries to auto-detect the GPS, may have some detection trouble making the connection to the configurator not working
+#define UseGPSNavigator		// EXPERIMENTAL NEEDS UseGPS TO BE DEFINED, enables GPS Position Hold, auto return to home if no mission or execute mission
 
 //
 // *******************************************************************************************************************************
@@ -150,7 +150,7 @@
 //#define MAV_SYSTEM_ID 100	// Needs to be enabled when using MavLink, used to identify each of your copters using MavLink
 				// If you've only got one, leave the default value unchanged, otherwise make sure that each copter has a different ID 
 #define GraupnerHoTTv4Telemetry // Enables Grauper HoTT v4 Telemetry
-#define GraupnerHoTT_SerialPort  1  // ... on Serial1
+#define GraupnerHoTT_SerialPort  2  // ... on Serial1
 
 //
 // *******************************************************************************************************************************
