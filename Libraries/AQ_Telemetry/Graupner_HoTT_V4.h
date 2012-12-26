@@ -21,6 +21,10 @@
 #if GraupnerHoTT_SerialPort == 1
 #define HOTT_SERIAL Serial1
 #endif
+#if GraupnerHoTT_SerialPort == 2
+#define HOTT_SERIAL Serial2
+#endif
+
 
 #define HOTT_Rad2Deg 57.2957795
 
