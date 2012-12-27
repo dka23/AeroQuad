@@ -31,14 +31,17 @@
 #include "Receiver.h"
 
 // Flight Software Version
-#define SOFTWARE_VERSION 3.1
+#define SOFTWARE_VERSION 3.2
 
-#if defined WirelessTelemetry && !defined MavLink
-  #define BAUD 111111 // use this to be compatible with USB and XBee connections
+#if defined CONFIG_BAUDRATE
+  #define BAUD CONFIG_BAUDRATE
 #else
-  #define BAUD 115200
+  #if defined WirelessTelemetry && !defined MavLink
+    #define BAUD 111111 // use this to be compatible with USB and XBee connections
+  #else
+    #define BAUD 115200
+  #endif
 #endif  
-
 
 /**
  * ESC calibration process global declaration
@@ -172,12 +175,17 @@ void reportVehicleState();
   int minThrottleAdjust = -50;
   int maxThrottleAdjust = 50;
   int altitudeHoldThrottle = 1000;
-  boolean isStoreAltitudeNeeded = false;
+  boolean isAltitudeHoldInitialized = false;
   
-//  float estimatedXVelocity = 0;
-//  float estimatedYVelocity = 0;
-//  int estimatedZVelocity = 0;
-//  float previousSensorAltitude = 0.0;
+  
+  float velocityCompFilter1 = 1.0 / (1.0 + 0.3);
+  float velocityCompFilter2 = 1 - velocityCompFilter1;
+
+  boolean runtimaZBiasInitialized = false;  
+  float zVelocity = 0.0;
+  float estimatedZVelocity = 0.0;
+  float runtimeZBias = 0.0; 
+  float zDampeningThrottleCorrection = 0.0;
 
   #if defined AltitudeHoldBaro
     float baroAltitudeToHoldTarget = 0.0;
@@ -197,7 +205,7 @@ void reportVehicleState();
   #define MOTOR_AUTO_DESCENT_STATE 4
   
   byte autoLandingState = OFF;
-  boolean isStoreAltitudeForAutoLanfingNeeded = false;
+  boolean isAutoLandingInitialized = false;
   int autoLandingThrottleCorrection = 0;
 #endif
 
@@ -221,11 +229,11 @@ void reportVehicleState();
     int gpsRollAxisCorrection = 0;
     int gpsPitchAxisCorrection = 0;
     int gpsYawAxisCorrection = 0;
-    boolean isStorePositionNeeded = false;
-    boolean isInitNavigationNeeded = false;
+    boolean isPositionHoldInitialized = false;
+    boolean isGpsNavigationInitialized = false;
 
     int waypointIndex = -1;    
-    float gpsDistanceToDestination = 99999999.0;
+    float distanceToDestination = 99999999.0;
     GeodeticPosition waypoint[MAX_WAYPOINTS] = {
       GPS_INVALID_POSITION, GPS_INVALID_POSITION, GPS_INVALID_POSITION, GPS_INVALID_POSITION,
       GPS_INVALID_POSITION, GPS_INVALID_POSITION, GPS_INVALID_POSITION, GPS_INVALID_POSITION,
@@ -286,9 +294,6 @@ typedef struct {
   float ALTITUDE_BUMP_ADR;
   float ALTITUDE_PANIC_ADR;
   // Gyro calibration
-  float GYRO_ROLL_ZERO_ADR;
-  float GYRO_PITCH_ZERO_ADR;
-  float GYRO_YAW_ZERO_ADR;
   float ROTATION_SPEED_FACTOR_ARD;
   // Accel Calibration
   float XAXIS_ACCEL_BIAS_ADR;
@@ -299,11 +304,8 @@ typedef struct {
   float ZAXIS_ACCEL_SCALE_FACTOR_ADR;
   // Mag Calibration
   float XAXIS_MAG_BIAS_ADR;
-  float XAXIS_MAG_SCALE_FACTOR_ADR;
   float YAXIS_MAG_BIAS_ADR;
-  float YAXIS_MAG_SCALE_FACTOR_ADR;
   float ZAXIS_MAG_BIAS_ADR;
-  float ZAXIS_MAG_SCALE_FACTOR_ADR;
   // Battery Monitor
   float BATT_ALARM_VOLTAGE_ADR;
   float BATT_THROTTLE_TARGET_ADR;
@@ -325,6 +327,7 @@ typedef struct {
   float SERVOMAXPITCH_ADR;
   float SERVOMAXROLL_ADR;
   float SERVOMAXYAW_ADR;
+  float SERVOTXCHANNELS_ADR;
   // GPS mission storing
   float GPS_MISSION_NB_POINT_ADR;
   GeodeticPosition WAYPOINT_ADR[MAX_WAYPOINTS];

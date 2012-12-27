@@ -40,7 +40,7 @@
 // Mega processor
 //#define AeroQuadMega_v1     // Arduino Mega with AeroQuad Shield v1.7 and below
 //#define AeroQuadMega_v2     // Arduino Mega with AeroQuad Shield v2.0
-//#define AeroQuadMega_v21    // Arduino Mega with AeroQuad Shield v2.1
+//#define AeroQuadMega_v21	// Arduino Mega with AeroQuad Shield v2.1
 //#define AeroQuadMega_Wii    // Arduino Mega with Wii Sensors and AeroQuad Shield v2.x
 #define AeroQuadMega_LSM303DLM_L3G4200D // Arduino Mega with LSM303DLM and L3G4200D sensors (Polulu Mini IMU)
 //#define ArduCopter          // ArduPilot Mega (APM) with Oilpan Sensor Board
@@ -58,7 +58,6 @@
 //For more information please refer to http://aeroquad.com/showwiki.php?title=Flight+Configurations
 
 #define quadXConfig
-//#define quadXHT_FPVConfig
 //#define quadPlusConfig
 //#define hexPlusConfig
 //#define hexXConfig      
@@ -71,7 +70,7 @@
 
 
 // MOTOR ADVANCE CONFIG SECTION
-//#define CHANGE_YAW_DIRECTION	// if you want to reverse the yaw correction direction
+//#define CHANGE_YAW_DIRECTION	// only needed if you want to reverse the yaw correction direction
 
 #define USE_400HZ_ESC			// For ESC that support 400Hz update rate, ESC OR PLATFORM MAY NOT SUPPORT IT
 
@@ -92,29 +91,35 @@
 // For more information on how to activate theese features with your transmitter
 // Please refer to http://aeroquad.com/showwiki.php?title=Using+the+transmitters+sticks+and+switches+to+operate+your+AeroQuad
 // *******************************************************************************************************************************
-#define HeadingMagHold		// Enables Magnetometer, gets automatically selected if CHR6DM is defined
-#define AltitudeHoldBaro		// Enables Barometer
+#define HeadingMagHold				// Enables Magnetometer, gets automatically selected if CHR6DM is defined
+#define AltitudeHoldBaro			// Enables Barometer
 //#define AltitudeHoldRangeFinder	// Enables Altitude Hold with range finder, not displayed on the configurator (yet)
-//#define AutoLanding			// Enables auto landing on channel AUX3 of the remote, NEEDS AltitudeHoldBaro AND AltitudeHoldRangeFinder to be defined
+//#define AutoLanding				// Enables auto landing on channel AUX3 of the remote, NEEDS AltitudeHoldBaro AND AltitudeHoldRangeFinder to be defined
 
-#define UseGPS			// Enables GPS, tries to auto-detect the GPS, may have some detection trouble making the connection to the configurator not working
-#define UseGPSNavigator		// EXPERIMENTAL NEEDS UseGPS TO BE DEFINED, enables GPS Position Hold, auto return to home if no mission or execute mission
+//
+// *******************************************************************************************************************************
+// GPS Options
+// *******************************************************************************************************************************
+#define UseGPS		        // Enables GPS (for mega v2.0/v2.1 on Serial1 & AeroQuad32 on Serial2)
+
+// Device specific settings
+//#define UseGPSMTKBINARY   // Set MTK devices to binary protocol (only DiyDrones MTK1.6 protocol supported)
 
 //
 // *******************************************************************************************************************************
 // Battery Monitor Options
 // For more information on how to setup the Battery Monitor please refer to http://aeroquad.com/showwiki.php?title=Battery+Monitor
 // *******************************************************************************************************************************
-#define BattMonitor		  // Enables Battery monitor
+#define BattMonitor			  // Enables Battery monitor
 #define BattMonitorAutoDescent  // NEED BattMonitor defined. If you want the craft to auto descent when the battery reaches the alarm voltage
 //#define POWERED_BY_VIN          // NEED BattMonitor defined. Uncomment this if your v2.x shield is powered directly by the Vin/Gnd of the arduino
 //
 // Advanced configuration. Please refer to the wiki for instructions.
-//#define BattCustomConfig DEFINE_BATTERY(3,BATT_ANALOG_INPUT,25.3,0,A6,66,0)
+//#define BattCustomConfig DEFINE_BATTERY(0,A4,51.8,0,A3,180.3,0)
 
 //
 // *******************************************************************************************************************************
-// Optional Receiver
+// Receiver Setup
 // For more information on how to connect your receiver to your AeroQuad board please refer to http://aeroquad.com/showwiki.php?title=Connecting+the+receiver+to+your+AeroQuad+board
 // *******************************************************************************************************************************
 //#define NormalReceiver	// This does nothing really, but it indicates users that they don't have to define other options here if they have a normal receiver
@@ -129,8 +134,9 @@
 //#define SKETCH_SERIAL_SUM_PPM SERIAL_SUM_PPM_2	//For Robe/Hitec/Futaba
 //#define SKETCH_SERIAL_SUM_PPM SERIAL_SUM_PPM_3	//For some Hitec/Sanwa/Others
 
-//#define UseAnalogRSSIReader // Reads RSSI for receiver failsafe, NEEDS A RECEIVER WITH FAILSAVE CONNECTED ON PIN A6 OF THE SHIELD
-//#define UseEzUHFRSSIReader // Reads RSSI and Signal quality on channel 7(RSSI) and 8(Signal Quality) of the EzUHF receiver (Receiver have to be configures this way)
+//#define UseAnalogRSSIReader	// Reads RSSI for receiver failsafe, NEEDS A RECEIVER WITH FAILSAVE CONNECTED ON PIN A6 OF THE SHIELD
+//#define UseEzUHFRSSIReader	// Reads RSSI and Signal quality on channel 7(RSSI) and 8(Signal Quality) of the EzUHF receiver (Receiver have to be configures this way)
+//#define UseSBUSRSSIReader		
 
 //
 // *******************************************************************************************************************************
@@ -138,11 +144,12 @@
 // *******************************************************************************************************************************
 #define LASTCHANNEL 6
 //#define LASTCHANNEL 8
+//#define LASTCHANNEL 10 // EXPERIMENTAL only tested with ReceiverSBUS on AQ32, test extensively before using other boards/receiver types
 
 //
 // *******************************************************************************************************************************
 // Optional telemetry (for debug or ground station tracking purposes)
-// For more information on how to setup Telemetry please refer to http://aeroquad.com/showwiki.php?title=Xbee+Installation
+// For more information on how to setup Telemetry please refer to http://aeroquad.com/showwiki.php?title=Wireless+Connection
 // *******************************************************************************************************************************
 //#define WirelessTelemetry	// Enables Wireless telemetry on Serial3  // Wireless telemetry enable
 
@@ -152,13 +159,16 @@
 #define GraupnerHoTTv4Telemetry // Enables Grauper HoTT v4 Telemetry
 #define GraupnerHoTT_SerialPort  2  // ... on Serial1
 
+//#define CONFIG_BAUDRATE 19200 // overrides default baudrate for serial port (Configurator/MavLink/WirelessTelemetry)
+
 //
 // *******************************************************************************************************************************
 // Optional audio channel telemetry (for ground station tracking purposes)
 // This will output telemetry at slow (1200baud) rate once per second on Serial2. 
 // *******************************************************************************************************************************
-//#define SlowTelemetry		// Enables audio channel telemetry on Serial2
-
+//#define SlowTelemetry			// Enables audio channel telemetry on Serial2
+//#define SoftModem             // Enable usage of DAC as modem on AQ32 instead of Serial 2
+//#define SOFTMODEM_FSKv2       // Enable non standard FSK frequencies used by FSKv2 module (TCM3105 at 8Mhz)
 
 //
 // *******************************************************************************************************************************
@@ -172,6 +182,7 @@
 // For more information please refer to http://aeroquad.com/showwiki.php?title=Camera+Stabilization
 // *******************************************************************************************************************************
 //#define CameraControl
+//#define CameraTXControl  // need to have CameraControl to work
 
 //
 // *******************************************************************************************************************************
@@ -182,9 +193,10 @@
 //#define ShowRSSI                  // This REQUIRES a RSSI reader
 //#define PAL                       // uncomment this to default to PAL video
 //#define AUTODETECT_VIDEO_STANDARD // detect automatically, signal must be present at Arduino powerup!
-//#define CALLSIGN "Aeroquad"       // Show (optional) callsign
+//#define CALLSIGN "KF7YRK"         // Show (optional) callsign
 //#define ShowAttitudeIndicator     // Display the attitude indicator calculated by the AHRS
 //#define USUnits                   // Enable for US units (feet,miles,mph), leave uncommented for metric units (meter,kilometer,km/h)
+//#define OSD50HZ			  // Experimental - Runs OSD at 50Hz for faster and smoother response ON BALOO ONLY
 
 //#define OSD_SYSTEM_MENU           // Menu system, currently only usable with OSD or SERIAL_LCD
 

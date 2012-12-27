@@ -176,33 +176,8 @@ void initializeEEPROM() {
     altitudeHoldPanicStickMovement = 250;
   #endif
   
-  // Gyro Cal
-  gyroZero[XAXIS] = 0.0;
-  gyroZero[YAXIS] = 0.0;
-  gyroZero[ZAXIS] = 0.0;
-//  gyroTempBiasSlope[XAXIS] = 0.0;
-//  gyroTempBiasSlope[YAXIS] = 0.0;
-//  gyroTempBiasSlope[ZAXIS] = 0.0;
-//  gyroTempBiasIntercept[XAXIS] = 0.0;
-//  gyroTempBiasIntercept[YAXIS] = 0.0;
-//  gyroTempBiasIntercept[ZAXIS] = 0.0;
-  
-  // Accel Cal
-  accelScaleFactor[XAXIS] = 1.0;
-  runTimeAccelBias[XAXIS] = 0.0;
-  accelScaleFactor[YAXIS] = 1.0;
-  runTimeAccelBias[YAXIS] = 0.0;
-  accelScaleFactor[ZAXIS] = 1.0;
-  runTimeAccelBias[ZAXIS] = 0.0;
+  initializePlatformSpecificAccelCalibration();
 
-  #ifdef HeadingMagHold
-    magScale[XAXIS] = 1.0;
-    magBias[XAXIS] = 0.0;
-    magScale[YAXIS] = 1.0;
-    magBias[YAXIS] = 0.0;
-    magScale[ZAXIS] = 1.0;
-    magBias[ZAXIS] = 0.0;
-  #endif
   windupGuard = 1000.0;
 
   // AKA - added so that each PID has its own windupGuard, will need to be removed once each PID's range is established and put in the eeprom
@@ -278,6 +253,9 @@ void initializeEEPROM() {
     servoMaxPitch = 2000;
     servoMaxRoll = 2000;
     servoMaxYaw = 2000;
+    #ifdef CameraTXControl
+      servoTXChannels = 1;
+    #endif
   #endif
 }
 
@@ -311,11 +289,8 @@ void readEEPROM() {
   // Mag calibration
   #ifdef HeadingMagHold
     magBias[XAXIS]  = readFloat(XAXIS_MAG_BIAS_ADR);
-    magScale[XAXIS] = readFloat(XAXIS_MAG_SCALE_FACTOR_ADR);
     magBias[YAXIS]  = readFloat(YAXIS_MAG_BIAS_ADR);
-    magScale[YAXIS] = readFloat(YAXIS_MAG_SCALE_FACTOR_ADR);
     magBias[ZAXIS]  = readFloat(ZAXIS_MAG_BIAS_ADR);
-    magScale[ZAXIS] = readFloat(ZAXIS_MAG_SCALE_FACTOR_ADR);
   #endif
   
   // Battery Monitor
@@ -343,12 +318,6 @@ void readEEPROM() {
   accelOneG = readFloat(ACCEL_1G_ADR);
   headingHoldConfig = readFloat(HEADINGHOLD_ADR);
 
-  // Range Finder
-  #if defined (AltitudeHoldRangeFinder)
-//    maxRangeFinderRange = readFloat(RANGE_FINDER_MAX_ADR);  // @Kenny @todo, remove this!
-//    minRangeFinderRange = readFloat(RANGE_FINDER_MIN_ADR);
-  #endif     
-  
   #if defined (UseGPSNavigator)
     missionNbPoint = readFloat(GPS_MISSION_NB_POINT_ADR);
     readPID(GPSROLL_PID_IDX, GPSROLL_PID_GAIN_ADR);
@@ -377,6 +346,10 @@ void readEEPROM() {
     servoMaxPitch = readFloat(SERVOMAXPITCH_ADR);
     servoMaxRoll = readFloat(SERVOMAXROLL_ADR);
     servoMaxYaw = readFloat(SERVOMAXYAW_ADR);
+    #ifdef CameraTXControl
+      servoTXChannels = readFloat(SERVOTXCHANNELS_ADR);
+      servoActualCenter = readFloat(SERVOCENTERPITCH_ADR);
+    #endif
   #endif   
 }
 
@@ -420,11 +393,8 @@ void writeEEPROM(){
   
   #ifdef HeadingMagHold
     writeFloat(magBias[XAXIS], XAXIS_MAG_BIAS_ADR);
-    writeFloat(magScale[XAXIS], XAXIS_MAG_SCALE_FACTOR_ADR);
     writeFloat(magBias[YAXIS], YAXIS_MAG_BIAS_ADR);
-    writeFloat(magScale[YAXIS], YAXIS_MAG_SCALE_FACTOR_ADR);
     writeFloat(magBias[ZAXIS], ZAXIS_MAG_BIAS_ADR);
-    writeFloat(magScale[ZAXIS], ZAXIS_MAG_SCALE_FACTOR_ADR);
   #endif
   writeFloat(windupGuard, WINDUPGUARD_ADR);
   writeFloat(receiverXmitFactor, XMITFACTOR_ADR);
@@ -486,15 +456,14 @@ void writeEEPROM(){
     writeFloat(servoMaxPitch, SERVOMAXPITCH_ADR);
     writeFloat(servoMaxRoll, SERVOMAXROLL_ADR);
     writeFloat(servoMaxYaw, SERVOMAXYAW_ADR);
+    #ifdef CameraTXControl
+      writeFloat(servoTXChannels, SERVOTXCHANNELS_ADR);
+    #endif
   #endif 
   sei(); // Restart interrupts
 }
 
 void initSensorsZeroFromEEPROM() {
-  // Gyro initialization from EEPROM
-  gyroZero[XAXIS] = readFloat(GYRO_ROLL_ZERO_ADR);
-  gyroZero[YAXIS] = readFloat(GYRO_PITCH_ZERO_ADR);
-  gyroZero[ZAXIS] = readFloat(GYRO_YAW_ZERO_ADR);
 
   // Accel initialization from EEPROM
   accelOneG = readFloat(ACCEL_1G_ADR);
@@ -508,10 +477,6 @@ void initSensorsZeroFromEEPROM() {
 }
 
 void storeSensorsZeroToEEPROM() {
-  // Store gyro data to EEPROM
-  writeFloat(gyroZero[XAXIS], GYRO_ROLL_ZERO_ADR);
-  writeFloat(gyroZero[YAXIS], GYRO_PITCH_ZERO_ADR);
-  writeFloat(gyroZero[ZAXIS], GYRO_YAW_ZERO_ADR);
   
   // Store accel data to EEPROM
   writeFloat(accelOneG, ACCEL_1G_ADR);
