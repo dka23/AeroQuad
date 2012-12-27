@@ -1527,11 +1527,23 @@ void process100HzTask() {
   evaluateGyroRate();
   evaluateMetersPerSec();
 
+  #ifdef GraupnerHoTTv4Telemetry
+    sendTelemetry();
+  #endif
+
   for (int axis = XAXIS; axis <= ZAXIS; axis++) {
     filteredAccel[axis] = computeFourthOrder(meterPerSecSec[axis], &fourthOrder[axis]);
   }
+
+  #ifdef GraupnerHoTTv4Telemetry
+    sendTelemetry();
+  #endif
     
   calculateKinematics(gyroRate[XAXIS], gyroRate[YAXIS], gyroRate[ZAXIS], filteredAccel[XAXIS], filteredAccel[YAXIS], filteredAccel[ZAXIS], G_Dt);
+
+  #ifdef GraupnerHoTTv4Telemetry
+    sendTelemetry();
+  #endif
   
   #if defined AltitudeHoldBaro || defined AltitudeHoldRangeFinder
     zVelocity = (filteredAccel[ZAXIS] * (1 - accelOneG * invSqrt(isq(filteredAccel[XAXIS]) + isq(filteredAccel[YAXIS]) + isq(filteredAccel[ZAXIS])))) - runTimeAccelBias[ZAXIS] - runtimeZBias;
@@ -1543,15 +1555,26 @@ void process100HzTask() {
     estimatedZVelocity = (velocityCompFilter1 * zVelocity) + (velocityCompFilter2 * estimatedZVelocity);
   #endif    
 
+  #ifdef GraupnerHoTTv4Telemetry
+    sendTelemetry();
+  #endif
+
   #if defined(AltitudeHoldBaro)
     measureBaroSum(); 
     if (frameCounter % THROTTLE_ADJUST_TASK_SPEED == 0) {  //  50 Hz tasks
       evaluateBaroAltitude();
     }
   #endif
+
+  #ifdef GraupnerHoTTv4Telemetry
+    sendTelemetry();
+  #endif
         
   processFlightControl();
   
+  #ifdef GraupnerHoTTv4Telemetry
+    sendTelemetry();
+  #endif
   
   #if defined(BinaryWrite)
     if (fastTransfer == ON) {
@@ -1567,6 +1590,10 @@ void process100HzTask() {
   #if defined(UseGPS)
     updateGps();
   #endif      
+
+  #ifdef GraupnerHoTTv4Telemetry
+    sendTelemetry();
+  #endif
   
   #if defined(CameraControl)
     moveCamera(kinematicsAngle[YAXIS],kinematicsAngle[XAXIS],kinematicsAngle[ZAXIS]);
@@ -1681,16 +1708,16 @@ void loop () {
 
   measureCriticalSensors();
 
-  // ================================================================
-  // 100Hz task loop
-  // ================================================================
   #ifdef GraupnerHoTTv4Telemetry
     processTelemetryCommand();
   #endif
   #ifdef GraupnerHoTTv4Telemetry
     sendTelemetry();
   #endif
-  
+
+  // ================================================================
+  // 100Hz task loop
+  // ================================================================  
   if (deltaTime >= 10000) {
     
     frameCounter++;
