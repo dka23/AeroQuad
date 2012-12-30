@@ -283,6 +283,7 @@ struct
  TODO
  
  InverseStatus2:
+ 1    No GPS Fix
  TODO
  
  */
@@ -297,31 +298,27 @@ struct
     unsigned char Heading;        // #07     // 1 = 2°
     unsigned int Speed;           // #08-09   // in km/h
     unsigned char Lat_North;      // #10
-    unsigned char Lat_G;          // #11
-    unsigned char Lat_M;          // #12
-    unsigned char Lat_Sek1;       // #13
-    unsigned char Lat_Sek2;       // #14
+    uint16_t Lat_G_M;             // #11-12
+    uint16_t Lat_Sek;             // #13-14
     unsigned char Lon_East;       // #15
-    unsigned char Lon_G;          // #16
-    unsigned char Lon_M;          // #17
-    unsigned char Lon_Sek1;       // #18
-    unsigned char Lon_Sek2;       // #19
+    uint16_t Lon_G_M;             // #16-17
+    uint16_t Lon_Sek;             // #18-19
     unsigned int Distance;        // #20-21
     signed int Altitude;          // #22-23    // 500 = 0m
     unsigned int m_sec;           // #24-25    // 3000 = 0
     unsigned char m_3sec;         // #26 120 = 0
     unsigned char NumOfSats;      // #27
-    unsigned char SatFix;         // #28
+    unsigned char SatFix;         // #28 'D' = DGPS, '2' = 2D, '3' = 3D, '-' = no fix
     unsigned char HomeDirection;  // #29
     unsigned char AngleX;         // #30
     unsigned char AngleY;         // #31
     unsigned char AngleZ;         // #32
-    signed int GyroX;             // #33-34
-    signed int GyroY;             // #35-36
-    signed int GyroZ;             // #37-38
+    uint32_t UtcTime;             // #33-36
+    unsigned int SeaLevelAltitude;             // #37-38
     unsigned char Vibration;      // #39
-    char              FreeCharacters[3]; // #40-42
-    byte Version;                 // #43
+    char FreeCharacters[3];       // #40-42
+                                  // Char 3: 'D' = DGPS, '2' = 2D, '3' = 3D, '-' = no fix
+    byte Version;                 // #43: 255 = Mikrokopter
     byte EndByte;                 // #44 - 0x7D
 } HoTTGPS;
 
@@ -417,14 +414,23 @@ void prepareHoTTVario() {
         memcpy(HoTTVario.Text, "Rate   ", 7);
     }
     
-    // Altitdue Hold State
-    if (altitudeHoldState == ON) {
-        memcpy(HoTTVario.Text+7, "AltHold", 7);
-    } else if (altitudeHoldState == ALTPANIC) {
-        memcpy(HoTTVario.Text+7, "AltPani", 7);
+    // Altitude Hold State
+#ifdef UseGpsNavigator
+    if (positionHoldState == ON && altitudeHoldState == ON) {
+        memcpy(HoTTVario.Text+7, "PosHold", 7);
     } else {
-        memcpy(HoTTVario.Text+7, "       ", 7);
+#endif
+        if (altitudeHoldState == ON) {
+            memcpy(HoTTVario.Text+7, "AltHold", 7);
+        } else if (altitudeHoldState == ALTPANIC) {
+            memcpy(HoTTVario.Text+7, "AltPani", 7);
+        } else {
+            memcpy(HoTTVario.Text+7, "       ", 7);
+        }
+#ifdef UseGpsNavigator
     }
+#endif
+
 }
 
 void prepareHoTTElectricAir() {
@@ -465,6 +471,22 @@ void prepareHoTTElectricAir() {
     HoTTElectricAir.VoltageCell14 = (motorCommand[3] - 1000) / 4;
 }
 
+void convertGpsCoordinate(int32_t coord, unsigned char* p_direction, uint16_t* p_degMin, uint16_t* p_sek) {
+    float coordFloat = abs(coord / 10000000.0); // Convert to decimal
+    
+    int degMin = coordFloat; // Degrees
+    coordFloat -= degMin;
+    coordFloat *= 60; // minutes
+    int min = coordFloat;
+    degMin = degMin * 100 + min;
+    
+    coordFloat -= min;
+    
+    *p_direction = (coord < 0.0);
+    *p_degMin = degMin;
+    *p_sek = coordFloat * 10000;
+}
+
 void prepareHoTTGPS() {
     HoTT.lastByteMicros = micros();     // for initial delay
     HoTT.msgBuffer = (byte*) &HoTTGPS;
@@ -472,7 +494,41 @@ void prepareHoTTGPS() {
     HoTT.isSending = true;
     HoTT.isFirstByte = true;
     
-    HoTTGPS.Heading = kinematicsAngle[ZAXIS] * HOTT_Rad2Deg / 2;
+//    HoTTGPS.Heading = kinematicsAngle[ZAXIS] * HOTT_Rad2Deg / 2;
+    
+#ifdef UseGPS
+    HoTTGPS.NumOfSats = gpsData.sats;
+    
+    if (gpsData.state == GPS_DETECTING || gpsData.state == GPS_NOFIX) {
+        HoTTGPS.InverseStatus2 = 1;
+        HoTTGPS.SatFix = '-';
+    } else if (gpsData.state == GPS_FIX2D) {
+        HoTTGPS.InverseStatus2 = 0;
+        HoTTGPS.SatFix = '2';
+    } else if (gpsData.state == GPS_FIX3D) {
+        HoTTGPS.InverseStatus2 = 0;
+        HoTTGPS.SatFix = '3';
+    } else if (gpsData.state == GPS_FIX3DD) {
+        HoTTGPS.InverseStatus2 = 0;
+        HoTTGPS.SatFix = 'D';
+    }
+    HoTTGPS.FreeCharacters[2] = HoTTGPS.SatFix;
+
+    convertGpsCoordinate(gpsData.lat, &HoTTGPS.Lat_North, &HoTTGPS.Lat_G_M, &HoTTGPS.Lat_Sek);
+    convertGpsCoordinate(gpsData.lon, &HoTTGPS.Lon_East, &HoTTGPS.Lon_G_M, &HoTTGPS.Lon_Sek);
+    
+    HoTTGPS.Heading = gpsData.course / 100000 / 2;
+    HoTTGPS.Speed = gpsData.speed / 100 / 1000 / 3600; // convert from cm/s to km/h
+    HoTTGPS.Altitude = getBaroAltitude() + 500;
+    HoTTGPS.SeaLevelAltitude = gpsData.height / 10 / 100; // convert from mm to m
+    
+    HoTTGPS.AngleX = kinematicsAngle[XAXIS] * HOTT_Rad2Deg / 2;
+    HoTTGPS.AngleY = kinematicsAngle[YAXIS] * HOTT_Rad2Deg / 2;
+    HoTTGPS.AngleZ = kinematicsAngle[ZAXIS] * HOTT_Rad2Deg / 2;
+    
+    HoTTGPS.UtcTime = gpsData.fixtime;
+#endif
+
 }
 
 
@@ -523,6 +579,7 @@ void initializeTelemetry() {
     HoTTGPS.Altitude = 500;
     HoTTGPS.m_sec = 30000;
     HoTTGPS.m_3sec = 120;
+    HoTTGPS.Version = 255;
 }
 
 /*
