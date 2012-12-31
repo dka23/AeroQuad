@@ -994,7 +994,7 @@
 
   // Battery monitor declaration
   #ifdef BattMonitor
-    #define BattDefaultConfig DEFINE_BATTERY(4, 0, 3.47*5.0, 0, BM_NOPIN, 0, 0)
+    #define BattDefaultConfig DEFINE_BATTERY(4, 0, 3.49*5.0, 0, BM_NOPIN, 0, 0)
   #else
     #undef BattMonitorAutoDescent
     #undef BattCellCount
@@ -1520,7 +1520,6 @@ void setup() {
  * 100Hz task
  ******************************************************************/
 void process100HzTask() {
-  
   G_Dt = (currentTime - hundredHZpreviousTime) / 1000000.0;
   hundredHZpreviousTime = currentTime;
   
@@ -1702,11 +1701,14 @@ void process1HzTask() {
  * Main loop funtions
  ******************************************************************/
 void loop () {
+//  long loopBeginTime = micros();
   
   currentTime = micros();
   deltaTime = currentTime - previousTime;
 
   measureCriticalSensors();
+
+//  long afterCritSensorsTime = micros();
 
   #ifdef GraupnerHoTTv4Telemetry
     processTelemetryCommand();
@@ -1714,6 +1716,13 @@ void loop () {
   #ifdef GraupnerHoTTv4Telemetry
     sendTelemetry();
   #endif
+/*
+  long afterGraupnerTime = micros();
+  long after100HzTime = micros();
+  long after50HzTime = micros();
+  long after10HzTime = micros();
+  long after1HzTime = micros();
+*/
 
   // ================================================================
   // 100Hz task loop
@@ -1722,14 +1731,15 @@ void loop () {
     
     frameCounter++;
     process100HzTask();
-
+//    after100HzTime = micros();
     // ================================================================
     // 50Hz task loop
     // ================================================================
     if (frameCounter % TASK_50HZ == 0) {  //  50 Hz tasks
       process50HzTask();
     }
-
+//    after50HzTime = micros();
+    
     // ================================================================
     // 10Hz task loop
     // ================================================================
@@ -1742,6 +1752,7 @@ void loop () {
     else if ((currentTime - lowPriorityTenHZpreviousTime2) > 100000) {
       process10HzTask3();
     }
+//    after10HzTime = micros();
     
     // ================================================================
     // 1Hz task loop
@@ -1749,6 +1760,7 @@ void loop () {
     if (frameCounter % TASK_1HZ == 0) {  //   1 Hz tasks
       process1HzTask();
     }
+//    after1HzTime = micros();
     
     previousTime = currentTime;
   }
@@ -1756,6 +1768,22 @@ void loop () {
   if (frameCounter >= 100) {
       frameCounter = 0;
   }
+
+/*  
+  Serial.print("Micros CritSens: ");
+  Serial.print(afterCritSensorsTime - loopBeginTime);
+  Serial.print(" HoTT: ");
+  Serial.print(afterGraupnerTime - afterCritSensorsTime);
+  Serial.print(" 100Hz: ");
+  Serial.print(after100HzTime - afterGraupnerTime);
+  Serial.print(" 50Hz: ");
+  Serial.print(after50HzTime - after100HzTime);
+  Serial.print(" 10Hz: ");
+  Serial.print(after10HzTime - after50HzTime);
+  Serial.print(" 1Hz: ");
+  Serial.print(after1HzTime - after10HzTime);
+  Serial.println();
+*/
 }
 
 
