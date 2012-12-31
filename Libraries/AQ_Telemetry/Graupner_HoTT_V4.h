@@ -334,19 +334,31 @@ struct
 
 
 /**
- * Enables RX and disables TX. Currently assumes Serial1.
+ * Enables RX and disables TX.
  */
 static void hottV4EnableReceiverMode() {
+#if GraupnerHoTT_SerialPort == 1
     UCSR1B &= ~_BV(TXEN1);
     UCSR1B |= _BV(RXEN1);
+#endif
+#if GraupnerHoTT_SerialPort == 2
+    UCSR2B &= ~_BV(TXEN2);
+    UCSR2B |= _BV(RXEN2);
+#endif
 }
 
 /**
- * Enabels TX and disables RX. Currently assumes Serial1.
+ * Enabels TX and disables RX.
  */
 static void hottV4EnableTransmitterMode() {
+#if GraupnerHoTT_SerialPort == 1
     UCSR1B &= ~_BV(RXEN1);
     UCSR1B |= _BV(TXEN1);
+#endif
+#if GraupnerHoTT_SerialPort == 2
+    UCSR2B &= ~_BV(RXEN2);
+    UCSR2B |= _BV(TXEN2);
+#endif
 }
 
 void prepareHoTTGeneral() {
@@ -493,9 +505,7 @@ void prepareHoTTGPS() {
     HoTT.msgLen = sizeof(HoTTGPS);
     HoTT.isSending = true;
     HoTT.isFirstByte = true;
-    
-//    HoTTGPS.Heading = kinematicsAngle[ZAXIS] * HOTT_Rad2Deg / 2;
-    
+        
 #ifdef UseGPS
     HoTTGPS.NumOfSats = gpsData.sats;
     
@@ -592,15 +602,14 @@ void initializeTelemetry() {
  */
 void sendTelemetry() {
     if (!HoTT.isSending) return;
-    if (micros() - HoTT.lastByteMicros < 2000) return;   // ensure 2ms delay between bytes (2-3ms required)
-    if (HoTT.isFirstByte && (micros() - HoTT.lastByteMicros < 4000)) return; // ensure 4ms delay before first byte (5ms required)
+    if (micros() - HoTT.lastByteMicros < 2500) return;   // ensure 2ms delay between bytes (2-3ms required)
+    if (HoTT.isFirstByte && (micros() - HoTT.lastByteMicros < 4500)) return; // ensure 4ms delay before first byte (5ms required)
     
     if (HoTT.isFirstByte) {
         if (HOTT_SERIAL.available()) {
             // It was other sensors data, don't send now
             while (HOTT_SERIAL.read() != -1); // Clear out receive buffer
             HoTT.isSending = false;
-            //Serial.println("Aborted sending");
             return;
         }
         
@@ -612,8 +621,6 @@ void sendTelemetry() {
     if (HoTT.msgLen > 0) {
         HoTT.msgCrc += *(HoTT.msgBuffer);
         HOTT_SERIAL.write(*(HoTT.msgBuffer));
-        HOTT_SERIAL.flush();
-        //Serial.print(*(HoTT.msgBuffer), HEX);
         HoTT.lastByteMicros = micros();
         
         HoTT.msgLen--;
@@ -621,12 +628,9 @@ void sendTelemetry() {
     } else {
         // Send checksum
         HOTT_SERIAL.write((byte) HoTT.msgCrc);
-        HOTT_SERIAL.flush();
-        //Serial.println((byte) HoTT.msgCrc, HEX);
         
         // Done with this message
         HoTT.isSending = false;
-        //Serial.println("Done");
         while (HOTT_SERIAL.read() != -1); // Clear out receive buffer
         hottV4EnableReceiverMode();
     }
@@ -643,7 +647,6 @@ void processTelemetryCommand() {
     
     while (HOTT_SERIAL.available()) {
         uint8_t inByte = HOTT_SERIAL.read();
-        //Serial.println(inByte, HEX);
         
         if (inByte == 0x80) {
             HoTT.mode = HOTT_MODE_BINARY;
@@ -654,16 +657,12 @@ void processTelemetryCommand() {
         if (HoTT.mode == HOTT_MODE_BINARY) {
             if (inByte == HOTT_GENERAL_ID) {
                 prepareHoTTGeneral();
-                //Serial.println("Prepared General");
             } else if (inByte == HOTT_VARIO_ID) {
                 prepareHoTTVario();
-                //Serial.println("Prepared Vario");
             } else if (inByte == HOTT_ELECTRIC_AIR_ID) {
                 prepareHoTTElectricAir();
-                //Serial.println("Prepared Electric Air");
             } else if (inByte == HOTT_GPS_ID) {
                 prepareHoTTGPS();
-                //Serial.println("Prepared GPS");
             }
         }
         
