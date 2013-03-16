@@ -263,37 +263,6 @@ void processMinMaxCommand()
       motorCommand[motor] =  motorCommand[motor] - (maxMotor - MAXCOMMAND);
     }
   }
-
-  // If everything within limits, turn flags off and reset max/mins to default
-  if (!motorMaxCheck) {
-    if (maxLimit) { // only reset if flag was on
-      for (byte motor = 0; motor < LASTMOTOR; motor++)
-        motorMinCommand[motor] = minArmedThrottle;
-      maxLimit = OFF;
-    }
-  }
-  if (!motorMinCheck) {
-    if (minLimit) { // only reset if flag was on
-      for (byte motor = 0; motor < LASTMOTOR; motor++)
-        motorMaxCommand[motor] = MAXCOMMAND;
-      minLimit = OFF;
-    }
-  }
-
-  // If any limits reached, freeze current min/max values and turn limit flag on
-  // In future iterations, if limit still exceeded again, use only first frozen values
-  for (byte motor = 0; motor < LASTMOTOR; motor++) {
-    if ((motorCommand[motor] >= MAXCOMMAND) && maxLimit == OFF) {
-      for (byte motorLimit = 0; motorLimit < LASTMOTOR; motorLimit++)
-        motorMinCommand[motorLimit] = motorCommand[motorLimit];
-      maxLimit = ON;
-    }
-    if ((motorCommand[motor] <= minArmedThrottle) && minLimit == OFF) {
-      for (byte motorLimit = 0; motorLimit < LASTMOTOR; motorLimit++)
-        motorMaxCommand[motorLimit] = motorCommand[motorLimit];
-      minLimit = ON;
-    }
-  }*/
 }
 
 /**
