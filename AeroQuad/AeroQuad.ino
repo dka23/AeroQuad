@@ -1011,11 +1011,16 @@
     #include <Graupner_HoTT_V4.h>
   #endif
 
+  // LED Stripe Lighting
+  #include <LED_Stripes.h>
+
   void initPlatform() {
     pinMode(LED_Red, OUTPUT);
     digitalWrite(LED_Red, LOW);
     pinMode(LED_Yellow, OUTPUT);
     digitalWrite(LED_Yellow, LOW);
+
+    initializeLEDStripes();
 
     Wire.begin();
 
@@ -1600,7 +1605,9 @@ void process100HzTask() {
       processCameraTXControl();
     #endif
   #endif       
-
+  
+  // LED Stripes
+  processLEDStripes();
 }
 
 /*******************************************************************
