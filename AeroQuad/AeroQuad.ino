@@ -952,9 +952,9 @@
 
 #ifdef AeroQuadMega_LSM303DLM_L3G4200D
 // DKA CONFIG
-  #define LED_Green 13
-  #define LED_Red 4
-  #define LED_Yellow 31
+  #define LED_Green 31
+  #define LED_Red 33
+  #define LED_Yellow 32
 
 
   #include <Device_I2C.h>
@@ -994,7 +994,7 @@
 
   // Battery monitor declaration
   #ifdef BattMonitor
-    #define BattDefaultConfig DEFINE_BATTERY(4, 0, 3.47*5.0, 0, BM_NOPIN, 0, 0)
+    #define BattDefaultConfig DEFINE_BATTERY(4, 0, 3.49*5.0, 0, BM_NOPIN, 0, 0)
   #else
     #undef BattMonitorAutoDescent
     #undef BattCellCount
@@ -1011,11 +1011,16 @@
     #include <Graupner_HoTT_V4.h>
   #endif
 
+  // LED Stripe Lighting
+  #include <LED_Stripes.h>
+
   void initPlatform() {
     pinMode(LED_Red, OUTPUT);
     digitalWrite(LED_Red, LOW);
     pinMode(LED_Yellow, OUTPUT);
     digitalWrite(LED_Yellow, LOW);
+
+    initializeLEDStripes();
 
     Wire.begin();
 
@@ -1041,13 +1046,23 @@
 
   }
 
+    // called when eeprom is initialized
+  void initializePlatformSpecificAccelCalibration() {
+    // Accel Cal
+    accelScaleFactor[XAXIS] = 1.0;
+    runTimeAccelBias[XAXIS] = 0.0;
+    accelScaleFactor[YAXIS] = 1.0;
+    runTimeAccelBias[YAXIS] = 0.0;
+    accelScaleFactor[ZAXIS] = 1.0;
+    runTimeAccelBias[ZAXIS] = 0.0;
+  }
 
   /**
    * Measure critical sensors
    */
   void measureCriticalSensors() {
     measureAccelSum();
-    measureGyro();
+    measureGyroSum();
   }
 #endif
 
@@ -1510,18 +1525,29 @@ void setup() {
  * 100Hz task
  ******************************************************************/
 void process100HzTask() {
-  
   G_Dt = (currentTime - hundredHZpreviousTime) / 1000000.0;
   hundredHZpreviousTime = currentTime;
   
   evaluateGyroRate();
   evaluateMetersPerSec();
 
+  #ifdef GraupnerHoTTv4Telemetry
+    sendTelemetry();
+  #endif
+
   for (int axis = XAXIS; axis <= ZAXIS; axis++) {
     filteredAccel[axis] = computeFourthOrder(meterPerSecSec[axis], &fourthOrder[axis]);
   }
+
+  #ifdef GraupnerHoTTv4Telemetry
+    sendTelemetry();
+  #endif
     
   calculateKinematics(gyroRate[XAXIS], gyroRate[YAXIS], gyroRate[ZAXIS], filteredAccel[XAXIS], filteredAccel[YAXIS], filteredAccel[ZAXIS], G_Dt);
+
+  #ifdef GraupnerHoTTv4Telemetry
+    sendTelemetry();
+  #endif
   
   #if defined AltitudeHoldBaro || defined AltitudeHoldRangeFinder
     zVelocity = (filteredAccel[ZAXIS] * (1 - accelOneG * invSqrt(isq(filteredAccel[XAXIS]) + isq(filteredAccel[YAXIS]) + isq(filteredAccel[ZAXIS])))) - runTimeAccelBias[ZAXIS] - runtimeZBias;
@@ -1533,15 +1559,26 @@ void process100HzTask() {
     estimatedZVelocity = (velocityCompFilter1 * zVelocity) + (velocityCompFilter2 * estimatedZVelocity);
   #endif    
 
+  #ifdef GraupnerHoTTv4Telemetry
+    sendTelemetry();
+  #endif
+
   #if defined(AltitudeHoldBaro)
     measureBaroSum(); 
     if (frameCounter % THROTTLE_ADJUST_TASK_SPEED == 0) {  //  50 Hz tasks
       evaluateBaroAltitude();
     }
   #endif
+
+  #ifdef GraupnerHoTTv4Telemetry
+    sendTelemetry();
+  #endif
         
   processFlightControl();
   
+  #ifdef GraupnerHoTTv4Telemetry
+    sendTelemetry();
+  #endif
   
   #if defined(BinaryWrite)
     if (fastTransfer == ON) {
@@ -1557,6 +1594,10 @@ void process100HzTask() {
   #if defined(UseGPS)
     updateGps();
   #endif      
+
+  #ifdef GraupnerHoTTv4Telemetry
+    sendTelemetry();
+  #endif
   
   #if defined(CameraControl)
     moveCamera(kinematicsAngle[YAXIS],kinematicsAngle[XAXIS],kinematicsAngle[ZAXIS]);
@@ -1564,7 +1605,9 @@ void process100HzTask() {
       processCameraTXControl();
     #endif
   #endif       
-
+  
+  // LED Stripes
+  processLEDStripes();
 }
 
 /*******************************************************************
@@ -1674,19 +1717,27 @@ void loop () {
   // ================================================================
   // 100Hz task loop
   // ================================================================
+
+  #ifdef GraupnerHoTTv4Telemetry
+    processTelemetryCommand();
+  #endif
+  #ifdef GraupnerHoTTv4Telemetry
+    sendTelemetry();
+  #endif
+
   if (deltaTime >= 10000) {
     
     frameCounter++;
     
     process100HzTask();
-
+    
     // ================================================================
     // 50Hz task loop
     // ================================================================
     if (frameCounter % TASK_50HZ == 0) {  //  50 Hz tasks
       process50HzTask();
     }
-
+    
     // ================================================================
     // 10Hz task loop
     // ================================================================
@@ -1703,7 +1754,7 @@ void loop () {
     // ================================================================
     // 1Hz task loop
     // ================================================================
-
+    
     if (frameCounter % TASK_1HZ == 0) {  //   1 Hz tasks
       process1HzTask();
     }

@@ -100,7 +100,8 @@
 // *******************************************************************************************************************************
 // GPS Options
 // *******************************************************************************************************************************
-//#define UseGPS		        // Enables GPS (for mega v2.0/v2.1 on Serial1 & AeroQuad32 on Serial2)
+#define UseGPS		        // Enables GPS (for mega v2.0/v2.1 on Serial1 & AeroQuad32 on Serial2)
+#define UseGPSNMEA
 
 // Device specific settings
 //#define UseGPSMTKBINARY   // Set MTK devices to binary protocol (only DiyDrones MTK1.6 protocol supported)
@@ -111,7 +112,7 @@
 // For more information on how to setup the Battery Monitor please refer to http://aeroquad.com/showwiki.php?title=Battery+Monitor
 // *******************************************************************************************************************************
 #define BattMonitor			  // Enables Battery monitor
-//#define BattMonitorAutoDescent  // NEED BattMonitor defined. If you want the craft to auto descent when the battery reaches the alarm voltage
+#define BattMonitorAutoDescent  // NEED BattMonitor defined. If you want the craft to auto descent when the battery reaches the alarm voltage
 //#define POWERED_BY_VIN          // NEED BattMonitor defined. Uncomment this if your v2.x shield is powered directly by the Vin/Gnd of the arduino
 //
 // Advanced configuration. Please refer to the wiki for instructions.
@@ -124,13 +125,14 @@
 // *******************************************************************************************************************************
 //#define NormalReceiver	// This does nothing really, but it indicates users that they don't have to define other options here if they have a normal receiver
 //#define RemotePCReceiver	// EXPERIMENTAL Use PC as transmitter via serial communicator with XBEE
-//#define ReceiverSBUS		// Use a Futaba sBUS RX, connect sBUS data line via an inverter (see wiki) to Serial2 RX, supports up to 8 channels on v2 and STM32 boards
+//#define ReceiverRNXVWiFly // Use remote via RNXVWiFly; this should be enabled in addition to RemotePCReceiver
+//#define ReceiverSBUS		// Use a Futaba sBUS RX, connect sBUS data line via an inverter (see wiki) to Serial2 RX, supports up to 8 channels
 //#define ReceiverPPM		// Use a PPM receiver
 #define ReceiverHWPPM		// Use a PPM receiver with HW timer (less jitter on channel values than PPM), needs a HW modification (see wiki)
 
 // You need to select one of these channel order definitions for PPM receiver
 #define SKETCH_SERIAL_SUM_PPM SERIAL_SUM_PPM_1	//For Graupner/Spektrum (DEFAULT)
-//#define SKETCH_SERIAL_SUM_PPM SERIAL_SUM_PPM_2		//For Robe/Hitec/Futaba/Turnigy9X+Er9X
+//#define SKETCH_SERIAL_SUM_PPM SERIAL_SUM_PPM_2	//For Robe/Hitec/Futaba
 //#define SKETCH_SERIAL_SUM_PPM SERIAL_SUM_PPM_3	//For some Hitec/Sanwa/Others
 
 //#define UseAnalogRSSIReader	// Reads RSSI for receiver failsafe, NEEDS A RECEIVER WITH FAILSAVE CONNECTED ON PIN A6 OF THE SHIELD
@@ -154,11 +156,11 @@
 //#define WirelessTelemetry	// Enables Wireless telemetry on Serial3  // Wireless telemetry enable
 
 #define GraupnerHoTTv4Telemetry // Enables Grauper HoTT v4 Telemetry
-#define GraupnerHoTT_SerialPort  1  // ... on Serial1
+#define GraupnerHoTT_SerialPort  2  // ... on Serial1
 
 //#define MavLink               // Enables the MavLink protocol
-//#define MAV_SYSTEM_ID 100		// Needs to be enabled when using MavLink, used to identify each of your copters using MavLink
-								// If you've only got one, leave the default value unchanged, otherwise make sure that each copter has a different ID 
+//#define MAV_SYSTEM_ID 100	// Needs to be enabled when using MavLink, used to identify each of your copters using MavLink
+				// If you've only got one, leave the default value unchanged, otherwise make sure that each copter has a different ID 
 
 //#define CONFIG_BAUDRATE 19200 // overrides default baudrate for serial port (Configurator/MavLink/WirelessTelemetry)
 

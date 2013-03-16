@@ -16,10 +16,15 @@
 #include "Motors.h"
 #include "Compass.h"
 #include "Kinematics.h"
+#include "BarometricSensor.h"
 
 #if GraupnerHoTT_SerialPort == 1
 #define HOTT_SERIAL Serial1
 #endif
+#if GraupnerHoTT_SerialPort == 2
+#define HOTT_SERIAL Serial2
+#endif
+
 
 #define HOTT_Rad2Deg 57.2957795
 
@@ -278,6 +283,7 @@ struct
  TODO
  
  InverseStatus2:
+ 1    No GPS Fix
  TODO
  
  */
@@ -292,31 +298,27 @@ struct
     unsigned char Heading;        // #07     // 1 = 2°
     unsigned int Speed;           // #08-09   // in km/h
     unsigned char Lat_North;      // #10
-    unsigned char Lat_G;          // #11
-    unsigned char Lat_M;          // #12
-    unsigned char Lat_Sek1;       // #13
-    unsigned char Lat_Sek2;       // #14
+    uint16_t Lat_G_M;             // #11-12
+    uint16_t Lat_Sek;             // #13-14
     unsigned char Lon_East;       // #15
-    unsigned char Lon_G;          // #16
-    unsigned char Lon_M;          // #17
-    unsigned char Lon_Sek1;       // #18
-    unsigned char Lon_Sek2;       // #19
+    uint16_t Lon_G_M;             // #16-17
+    uint16_t Lon_Sek;             // #18-19
     unsigned int Distance;        // #20-21
     signed int Altitude;          // #22-23    // 500 = 0m
     unsigned int m_sec;           // #24-25    // 3000 = 0
     unsigned char m_3sec;         // #26 120 = 0
     unsigned char NumOfSats;      // #27
-    unsigned char SatFix;         // #28
+    unsigned char SatFix;         // #28 'D' = DGPS, '2' = 2D, '3' = 3D, '-' = no fix
     unsigned char HomeDirection;  // #29
     unsigned char AngleX;         // #30
     unsigned char AngleY;         // #31
     unsigned char AngleZ;         // #32
-    signed int GyroX;             // #33-34
-    signed int GyroY;             // #35-36
-    signed int GyroZ;             // #37-38
+    uint32_t UtcTime;             // #33-36
+    unsigned int SeaLevelAltitude;             // #37-38
     unsigned char Vibration;      // #39
-    char              FreeCharacters[3]; // #40-42
-    byte Version;                 // #43
+    char FreeCharacters[3];       // #40-42
+                                  // Char 3: 'D' = DGPS, '2' = 2D, '3' = 3D, '-' = no fix
+    byte Version;                 // #43: 255 = Mikrokopter
     byte EndByte;                 // #44 - 0x7D
 } HoTTGPS;
 
@@ -332,19 +334,31 @@ struct
 
 
 /**
- * Enables RX and disables TX. Currently assumes Serial1.
+ * Enables RX and disables TX.
  */
 static void hottV4EnableReceiverMode() {
+#if GraupnerHoTT_SerialPort == 1
     UCSR1B &= ~_BV(TXEN1);
     UCSR1B |= _BV(RXEN1);
+#endif
+#if GraupnerHoTT_SerialPort == 2
+    UCSR2B &= ~_BV(TXEN2);
+    UCSR2B |= _BV(RXEN2);
+#endif
 }
 
 /**
- * Enabels TX and disables RX. Currently assumes Serial1.
+ * Enabels TX and disables RX.
  */
 static void hottV4EnableTransmitterMode() {
+#if GraupnerHoTT_SerialPort == 1
     UCSR1B &= ~_BV(RXEN1);
     UCSR1B |= _BV(TXEN1);
+#endif
+#if GraupnerHoTT_SerialPort == 2
+    UCSR2B &= ~_BV(RXEN2);
+    UCSR2B |= _BV(TXEN2);
+#endif
 }
 
 void prepareHoTTGeneral() {
@@ -374,7 +388,7 @@ void prepareHoTTGeneral() {
     
     
     // Altitude
-    int altitude = getAltitudeFromSensors() == INVALID_ALTITUDE ? 0 : getAltitudeFromSensors();
+    int altitude = getBaroAltitude();
     HoTTGeneral.Altitude = altitude + 500;
     
     // Motors Armed
@@ -412,14 +426,23 @@ void prepareHoTTVario() {
         memcpy(HoTTVario.Text, "Rate   ", 7);
     }
     
-    // Altitdue Hold State
-    if (altitudeHoldState == ON) {
-        memcpy(HoTTVario.Text+7, "AltHold", 7);
-    } else if (altitudeHoldState == ALTPANIC) {
-        memcpy(HoTTVario.Text+7, "AltPani", 7);
+    // Altitude Hold State
+#ifdef UseGpsNavigator
+    if (positionHoldState == ON && altitudeHoldState == ON) {
+        memcpy(HoTTVario.Text+7, "PosHold", 7);
     } else {
-        memcpy(HoTTVario.Text+7, "       ", 7);
+#endif
+        if (altitudeHoldState == ON) {
+            memcpy(HoTTVario.Text+7, "AltHold", 7);
+        } else if (altitudeHoldState == ALTPANIC) {
+            memcpy(HoTTVario.Text+7, "AltPani", 7);
+        } else {
+            memcpy(HoTTVario.Text+7, "       ", 7);
+        }
+#ifdef UseGpsNavigator
     }
+#endif
+
 }
 
 void prepareHoTTElectricAir() {
@@ -435,7 +458,7 @@ void prepareHoTTElectricAir() {
     HoTTElectricAir.InputVoltage = batteryData[0].voltage/10.0;
 
     // Altitude
-    int altitude = getAltitudeFromSensors() == INVALID_ALTITUDE ? 0 : getAltitudeFromSensors();
+    int altitude = getBaroAltitude();
     HoTTElectricAir.Altitude = altitude + 500;
     
     // Gyro as cell voltages 1-3 (125 = 2.5V = 0.0), resolution 0.01 = 0.1
@@ -460,14 +483,62 @@ void prepareHoTTElectricAir() {
     HoTTElectricAir.VoltageCell14 = (motorCommand[3] - 1000) / 4;
 }
 
+void convertGpsCoordinate(int32_t coord, unsigned char* p_direction, uint16_t* p_degMin, uint16_t* p_sek) {
+    float coordFloat = abs(coord / 10000000.0); // Convert to decimal
+    
+    int degMin = coordFloat; // Degrees
+    coordFloat -= degMin;
+    coordFloat *= 60; // minutes
+    int min = coordFloat;
+    degMin = degMin * 100 + min;
+    
+    coordFloat -= min;
+    
+    *p_direction = (coord < 0.0);
+    *p_degMin = degMin;
+    *p_sek = coordFloat * 10000;
+}
+
 void prepareHoTTGPS() {
     HoTT.lastByteMicros = micros();     // for initial delay
     HoTT.msgBuffer = (byte*) &HoTTGPS;
     HoTT.msgLen = sizeof(HoTTGPS);
     HoTT.isSending = true;
     HoTT.isFirstByte = true;
+        
+#ifdef UseGPS
+    HoTTGPS.NumOfSats = gpsData.sats;
     
-    HoTTGPS.Heading = kinematicsAngle[ZAXIS] * HOTT_Rad2Deg / 2;
+    if (gpsData.state == GPS_DETECTING || gpsData.state == GPS_NOFIX) {
+        HoTTGPS.InverseStatus2 = 1;
+        HoTTGPS.SatFix = '-';
+    } else if (gpsData.state == GPS_FIX2D) {
+        HoTTGPS.InverseStatus2 = 0;
+        HoTTGPS.SatFix = '2';
+    } else if (gpsData.state == GPS_FIX3D) {
+        HoTTGPS.InverseStatus2 = 0;
+        HoTTGPS.SatFix = '3';
+    } else if (gpsData.state == GPS_FIX3DD) {
+        HoTTGPS.InverseStatus2 = 0;
+        HoTTGPS.SatFix = 'D';
+    }
+    HoTTGPS.FreeCharacters[2] = HoTTGPS.SatFix;
+
+    convertGpsCoordinate(gpsData.lat, &HoTTGPS.Lat_North, &HoTTGPS.Lat_G_M, &HoTTGPS.Lat_Sek);
+    convertGpsCoordinate(gpsData.lon, &HoTTGPS.Lon_East, &HoTTGPS.Lon_G_M, &HoTTGPS.Lon_Sek);
+    
+    HoTTGPS.Heading = gpsData.course / 100000 / 2;
+    HoTTGPS.Speed = gpsData.speed / 100 / 1000 / 3600; // convert from cm/s to km/h
+    HoTTGPS.Altitude = getBaroAltitude() + 500;
+    HoTTGPS.SeaLevelAltitude = gpsData.height / 10 / 100; // convert from mm to m
+    
+    HoTTGPS.AngleX = kinematicsAngle[XAXIS] * HOTT_Rad2Deg / 2;
+    HoTTGPS.AngleY = kinematicsAngle[YAXIS] * HOTT_Rad2Deg / 2;
+    HoTTGPS.AngleZ = kinematicsAngle[ZAXIS] * HOTT_Rad2Deg / 2;
+    
+    HoTTGPS.UtcTime = gpsData.fixtime;
+#endif
+
 }
 
 
@@ -518,6 +589,7 @@ void initializeTelemetry() {
     HoTTGPS.Altitude = 500;
     HoTTGPS.m_sec = 30000;
     HoTTGPS.m_3sec = 120;
+    HoTTGPS.Version = 255;
 }
 
 /*
@@ -530,15 +602,14 @@ void initializeTelemetry() {
  */
 void sendTelemetry() {
     if (!HoTT.isSending) return;
-    if (micros() - HoTT.lastByteMicros < 2000) return;   // ensure 2ms delay between bytes (2-3ms required)
-    if (HoTT.isFirstByte && (micros() - HoTT.lastByteMicros < 4000)) return; // ensure 4ms delay before first byte (5ms required)
+    if (micros() - HoTT.lastByteMicros < 2500) return;   // ensure 2ms delay between bytes (2-3ms required)
+    if (HoTT.isFirstByte && (micros() - HoTT.lastByteMicros < 4500)) return; // ensure 4ms delay before first byte (5ms required)
     
     if (HoTT.isFirstByte) {
         if (HOTT_SERIAL.available()) {
             // It was other sensors data, don't send now
             while (HOTT_SERIAL.read() != -1); // Clear out receive buffer
             HoTT.isSending = false;
-            //Serial.println("Aborted sending");
             return;
         }
         
@@ -550,8 +621,6 @@ void sendTelemetry() {
     if (HoTT.msgLen > 0) {
         HoTT.msgCrc += *(HoTT.msgBuffer);
         HOTT_SERIAL.write(*(HoTT.msgBuffer));
-        HOTT_SERIAL.flush();
-        //Serial.print(*(HoTT.msgBuffer), HEX);
         HoTT.lastByteMicros = micros();
         
         HoTT.msgLen--;
@@ -559,12 +628,9 @@ void sendTelemetry() {
     } else {
         // Send checksum
         HOTT_SERIAL.write((byte) HoTT.msgCrc);
-        HOTT_SERIAL.flush();
-        //Serial.println((byte) HoTT.msgCrc, HEX);
         
         // Done with this message
         HoTT.isSending = false;
-        //Serial.println("Done");
         while (HOTT_SERIAL.read() != -1); // Clear out receive buffer
         hottV4EnableReceiverMode();
     }
@@ -581,7 +647,6 @@ void processTelemetryCommand() {
     
     while (HOTT_SERIAL.available()) {
         uint8_t inByte = HOTT_SERIAL.read();
-        //Serial.println(inByte, HEX);
         
         if (inByte == 0x80) {
             HoTT.mode = HOTT_MODE_BINARY;
@@ -592,16 +657,12 @@ void processTelemetryCommand() {
         if (HoTT.mode == HOTT_MODE_BINARY) {
             if (inByte == HOTT_GENERAL_ID) {
                 prepareHoTTGeneral();
-                //Serial.println("Prepared General");
             } else if (inByte == HOTT_VARIO_ID) {
                 prepareHoTTVario();
-                //Serial.println("Prepared Vario");
             } else if (inByte == HOTT_ELECTRIC_AIR_ID) {
                 prepareHoTTElectricAir();
-                //Serial.println("Prepared Electric Air");
             } else if (inByte == HOTT_GPS_ID) {
                 prepareHoTTGPS();
-                //Serial.println("Prepared GPS");
             }
         }
         

@@ -20,11 +20,11 @@
 
 #include <Wire.h>
 #include <Device_I2C.h>
-#include <GlobalDefined.h>
-#include <APM_ADC.h>
 #include <AQMath.h>
 
 #include <GlobalDefined.h>
+#include <SensorsStatus.h>
+#include <BarometricSensor.h>
 #include <BarometricSensor_BMP085.h>
 
 unsigned long timer = 0;
