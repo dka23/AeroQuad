@@ -23,6 +23,7 @@
 
 #include <Accelerometer.h>
 #include <Platform_Wii.h>
+#include <SensorsStatus.h>
 
 void initializeAccel() {
   vehicleState |= ACCEL_DETECTED;
@@ -64,7 +65,7 @@ void computeAccelBias() {
   runTimeAccelBias[YAXIS] = -meterPerSecSec[YAXIS];
   runTimeAccelBias[ZAXIS] = -9.8065 - meterPerSecSec[ZAXIS];
 
-  accelOneG = abs(meterPerSecSec[ZAXIS] + runTimeAccelBias[ZAXIS]);
+  accelOneG = fabs(meterPerSecSec[ZAXIS] + runTimeAccelBias[ZAXIS]);
 }
 
 #endif
